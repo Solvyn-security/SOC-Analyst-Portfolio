@@ -12,6 +12,12 @@ I investigated suspicious PCAP traffic, correlated an IDS alert with HTTP activi
 ### Identify the affected system and alert
 The internal host `172.16.1.102` communicated with `169.239.128.11:80`, associated in the lab with `fidufagios.com`. Brim exposed an **ET MALWARE MirrorBlast CnC Activity** alert (signature ID `2034023`, reported severity 1). I pivoted from the alert to the corresponding HTTP transactions.
 
+
+
+![Figure 1. Brim alert details tie the MirrorBlast CnC signature to the internal endpoint and external HTTP destination.](screenshots/01-mirrorblast-alert.png)
+
+*Figure 1. Brim alert details tie the MirrorBlast CnC signature to the internal endpoint and external HTTP destination.*
+
 ### Decode the beacon
 Suspicious requests used Base64-encoded URI parameters. CyberChef decoding exposed:
 
@@ -21,6 +27,17 @@ name=STOCKITFORUS\dwight.morales&os=10.0&arch=x86&build=1.0.2
 
 The observed User-Agent included `REBOL View 2.7.8.3.1`. These fields supplied useful host/user and tooling context, but alone do not prove a specific malware family.
 
+
+
+![Figure 2. Wireshark isolates requests to fidufagios.com and the REBOL client User-Agent.](screenshots/02-c2-request-metadata.png)
+
+*Figure 2. Wireshark isolates requests to fidufagios.com and the REBOL client User-Agent.*
+
+
+![Figure 3. The HTTP stream shows an encoded-looking request parameter and a short structured server response.](screenshots/03-http-beacon-stream.png)
+
+*Figure 3. The HTTP stream shows an encoded-looking request parameter and a short structured server response.*
+
 ### Reconstruct delivery activity
 Traffic showed an earlier `feedproxy.google.com` redirect and subsequent requests for Windows Installer payloads. Notable downloaded files were:
 
@@ -29,7 +46,23 @@ Traffic showed an earlier `feedproxy.google.com` redirect and subsequent request
 | `filter.msi` | `185.10.68.235` | 188,416 bytes |
 | `10opd3r_load.msi` | `192.36.27.92` | 561,152 bytes |
 
-The installer-related telemetry exposed paths including `C:\ProgramData\001\arab.bin`, `C:\ProgramData\001\arab.exe`, `C:\ProgramData\Local\Google\rebol-view-278_3_1.exe`, and `C:\ProgramData\Local\Google\exemple.rb`. These are **observed artifact/path references**, not proof that each file executed.
+The installer-related telemetry exposed paths including `C:\ProgramData\001\arab.bin`, `C:\ProgramData\001\arab.exe`, `C:\ProgramData\Local\Google\rebol-view-278-3-1.exe`, and `C:\ProgramData\Local\Google\exemple.rb`. These are **observed artifact/path references**, not proof that each file executed.
+
+
+
+![Figure 4. HTTP requests and responses identify the two installer download endpoints and application/x-msi transfers.](screenshots/04-msi-download-responses.png)
+
+*Figure 4. HTTP requests and responses identify the two installer download endpoints and application/x-msi transfers.*
+
+
+![Figure 5. Readable MSI data references arab.bin and arab.exe; embedded strings do not prove file execution.](screenshots/05-filter-msi-embedded-artifacts.png)
+
+*Figure 5. Readable MSI data references arab.bin and arab.exe; embedded strings do not prove file execution.*
+
+
+![Figure 6. The second MSI stream references the REBOL executable and exemple.rb under ProgramData.](screenshots/06-second-msi-embedded-paths.png)
+
+*Figure 6. The second MSI stream references the REBOL executable and exemple.rb under ProgramData.*
 
 ## Selected IOCs
 
@@ -53,3 +86,4 @@ The installer-related telemetry exposed paths including `C:\ProgramData\001\arab
 Isolate the affected endpoint, preserve PCAP and endpoint logs, block verified malicious destinations, examine MSI execution/installation traces, hunt for related process names, and validate persistence and lateral movement.
 
 **Scope:** Controlled training environment. No executable malware or raw credentials are included.
+

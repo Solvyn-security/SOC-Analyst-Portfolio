@@ -40,19 +40,24 @@ SOC-Analyst-Portfolio/
     │   ├── README.md
     │   └── screenshots/
     ├── The-Crown-Jewel/
-    │   └── README.md
+    │   ├── README.md
+│   └── screenshots/
     ├── Warzone-1/
-    │   └── README.md
+    │   ├── README.md
+│   └── screenshots/
     ├── Warzone-2/
-    │   └── README.md
+    │   ├── README.md
+│   └── screenshots/
     └── Zero-Tolerance/
-        └── README.md
+        ├── README.md
+        └── screenshots/
 ```
 
 ## Evidence and publication notes
 
 These are **controlled educational lab** investigations, not claims of employment-based incident response. Lab-only IOCs should not be treated as universally malicious outside their historical context. The reports avoid publishing live malicious payloads, passwords, or private forensic evidence.
 
-Carnage includes nine original investigation screenshots. Other reports currently document findings and methodology in text; additional original screenshots can be added after review. Incomplete evidence is identified explicitly rather than filled in with assumptions.
+Carnage includes nine original investigation screenshots. Zero Tolerance includes ten evidence figures, The Crown Jewel six, and Warzone 1 six, recovered from the original investigation discussion. Warzone 2 retains one scenario-context image, explicitly distinguished from investigative evidence. Captions state what each image supports; the plaintext-password screenshot is omitted. Incomplete evidence is identified explicitly rather than filled in with assumptions.
 
 **Portfolio identity:** Solvyn
+

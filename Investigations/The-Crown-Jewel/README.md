@@ -14,14 +14,37 @@ These findings are from a controlled lab. Individual events establish specific o
 ### 1. Suspicious outbound session
 A network pivot from host `10.10.10.100` to `1.1.1.1:8080` showed a conversation containing `id=beacon&ver=1` and an HTTP `200 OK` response. This supported the outbound-beacon/reverse-shell alert and justified additional endpoint and network triage. Note: `1.1.1.1` is a well-known public resolver address outside this lab; **do not operationalize it as a globally malicious IOC**.
 
+
+
+![Figure 1. The IDS event identifies the internal host, destination port, and reverse-shell alert signature.](screenshots/01-outbound-alert.png)
+
+*Figure 1. The IDS event identifies the internal host, destination port, and reverse-shell alert signature.*
+
+
+![Figure 2. The TCP stream contains the beacon marker and a 200 OK response.](screenshots/02-beacon-stream.png)
+
+*Figure 2. The TCP stream contains the beacon marker and a 200 OK response.*
+
 ### 2. ARP impersonation / interception risk
 Traffic analysis identified MAC `00:0c:29:11:22:33` claiming the gateway IP `10.10.10.1` and also IP `10.10.10.150`. The lab investigation counted approximately **90 suspicious ARP replies** across both impersonation directions. This is consistent with an ARP poisoning / man-in-the-middle attempt.
+
+
+
+![Figure 3. The filtered packet list contains alternating ARP claims for the gateway and the second internal IP.](screenshots/03-forged-arp-replies.png)
+
+*Figure 3. The filtered packet list contains alternating ARP claims for the gateway and the second internal IP.*
 
 ### 3. Suspicious application access
 An HTTP request to Jira contained the distinctive User-Agent string `CVE-202X-EXPLOIT`. This is an investigation lead indicating unusual tooling rather than sufficient proof on its own that exploitation succeeded.
 
+
+
+![Figure 4. Splunk User-Agent values expose CVE-202X-EXPLOIT as an application-access outlier.](screenshots/04-jira-user-agent-outlier.png)
+
+*Figure 4. Splunk User-Agent values expose CVE-202X-EXPLOIT as an application-access outlier.*
+
 ### 4. Exposed login material
-A plaintext HTTP POST to `internal.login.local/login.php` contained credential fields for `dev_user`. The password value is **redacted** from this public report. This illustrates the interception and exposure risks of unencrypted credential submission.
+A plaintext HTTP POST to `internal.login.local/login.php` contained credential fields for `dev_user`. The password value is **redacted** from this public report. This illustrates the interception and exposure risks of unencrypted credential submission. The original stream screenshot is omitted because it exposes the password.
 
 ### 5. DNS-based suspected exfiltration
 Splunk and packet analysis found approximately **500 DNS events** associated with `exfil-domain.xyz`, with numerous long/high-entropy subdomains originating from `10.10.10.200`. This strongly suggests DNS tunneling or encoded-data transfer. DNS queries alone do not establish the full content or final receipt of exfiltrated data.
@@ -37,6 +60,17 @@ This is a heuristic to reduce noise, **not proof of exfiltration**. After identi
 ```wireshark
 dns.qry.name contains "exfil-domain.xyz"
 ```
+
+
+
+![Figure 5. Wireshark exposes long DNS queries to exfil-domain.xyz after the initial size-based triage filter.](screenshots/05-dns-packet-pivot.png)
+
+*Figure 5. Wireshark exposes long DNS queries to exfil-domain.xyz after the initial size-based triage filter.*
+
+
+![Figure 6. Splunk correlates 500 DNS events for the suspicious domain; query volume and pattern support the hypothesis without proving data receipt.](screenshots/06-dns-siem-correlation.png)
+
+*Figure 6. Splunk correlates 500 DNS events for the suspicious domain; query volume and pattern support the hypothesis without proving data receipt.*
 
 ## Selected evidence and interpretation
 
@@ -66,3 +100,4 @@ dns.qry.name contains "exfil-domain.xyz"
 
 ## Analyst reflection
 The investigation required moving from one critical alert to multiple corroborating network sources. The key lesson was to distinguish an **analytical filter** from evidence: large DNS frames are a good lead, but the destination and query pattern provide the actual justification.
+

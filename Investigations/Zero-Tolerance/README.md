@@ -19,8 +19,25 @@ This is a reconstruction of **lab evidence**, not evidence from a production env
 
 The timing supports a user-execution-to-LOLBin chain; the exact shortcut target was not recovered in the discussed evidence.
 
+
+
+![Figure 1. Sysmon file creation links 7-Zip extraction to the deceptive TravisClart_Resume.pdf.lnk artifact.](screenshots/01-deceptive-resume-shortcut.png)
+
+*Figure 1. Sysmon file creation links 7-Zip extraction to the deceptive TravisClart_Resume.pdf.lnk artifact.*
+
+
+![Figure 2. The time-matched reg.exe event identifies mshta.exe and the remote HTA as its parent; other rows illustrate PID reuse.](screenshots/02-mshta-registry-process-chain.png)
+
+*Figure 2. The time-matched reg.exe event identifies mshta.exe and the remote HTA as its parent; other rows illustrate PID reuse.*
+
 ### Payload, command and control
 The HTA execution chain launched PowerShell with a `Net.WebClient.DownloadFile` command retrieving `RuntimeBroker.exe` from `10.10.14.174:80` to `C:\Windows\Temp\RuntimeBroker.exe`, and the executable was started. A Sysmon Event ID 3 aggregation identified **12,640** connections from that executable to `10.10.14.174:8080` during the observed collection period. This repeated, process-attributed traffic strongly supports the C2 assessment.
+
+
+
+![Figure 3. Sysmon network-event aggregation attributes 12,640 connections to RuntimeBroker.exe at 10.10.14.174:8080.](screenshots/03-process-attributed-c2.png)
+
+*Figure 3. Sysmon network-event aggregation attributes 12,640 connections to RuntimeBroker.exe at 10.10.14.174:8080.*
 
 ### Persistence
 Sysmon Event ID 13 and the corresponding `reg.exe` command show creation of the per-user Run value:
@@ -32,15 +49,38 @@ HKCU\Software\Microsoft\Windows\CurrentVersion\Run\SystemMonitor
 
 Sysmon normalized the hive to `HKU\<user SID>` in its `TargetObject` field; the attacker’s command used `HKCU`.
 
+
+
+![Figure 4. Registry telemetry shows SystemMonitor pointing to the executable in C:\Windows\Temp.](screenshots/04-run-key-persistence.png)
+
+*Figure 4. Registry telemetry shows SystemMonitor pointing to the executable in C:\Windows\Temp.*
+
 ### Credential access and defenses
 - PowerShell process creation at **05:09:34** executed a downloaded PowerShell credential-access module from the BC-Security Empire repository: `Invoke-Mimikatz -DumpCreds`.
 - The attacker also ran a standalone `mimikatz.exe` from the user's Downloads directory. Its interactive internal commands were **not** visible in the examined process-creation telemetry, so they should not be inferred.
 - An encoded PowerShell command decoded to `Set-MpPreference -DisableRealtimeMonitoring 1` and `Set-MpPreference -ExclusionPath 'C:\'`, both with `-ErrorAction SilentlyContinue`. These are observed **attempts** to weaken Defender; success was not independently proven.
 
+
+
+![Figure 5. A Sysmon process-termination event identifies the standalone Mimikatz executable; it does not reveal interactive credential-dumping commands.](screenshots/05-mimikatz-process-artifact.png)
+
+*Figure 5. A Sysmon process-termination event identifies the standalone Mimikatz executable; it does not reveal interactive credential-dumping commands.*
+
 ### Remote movement and successful login
 - At **05:17:59**, Sysmon captured `PsExec64.exe` (PID **6612**) invoking a remote `reg add` command on `10.10.152.240`, identified as `BKUP-SRV01`.
 - Network logons (Security Event ID 4624, Type 3) originated from `JP-BROWN-WS` (`10.10.52.82`) at **05:18:01** and afterward.
 - `mstsc.exe /restrictedadmin /v:10.10.152.240` launched at **05:19:38**. The matching **Type 10 RemoteInteractive** successful logon on `BKUP-SRV01` was at **2025-11-14 05:19:42**, as `bkup-svc`. The distinction between Type 3 and Type 10 was essential to accurately identify the interactive login.
+
+
+
+![Figure 6. PsExec64.exe targets the backup server with a remote registry command.](screenshots/06-psexec-remote-command.png)
+
+*Figure 6. PsExec64.exe targets the backup server with a remote registry command.*
+
+
+![Figure 7. Security Event 4624 distinguishes the earlier Type 3 network logons from the Type 10 logon at 05:19:42.](screenshots/07-network-and-rdp-logons.png)
+
+*Figure 7. Security Event 4624 distinguishes the earlier Type 3 network logons from the Type 10 logon at 05:19:42.*
 
 ### Collection and staging
 After access to the backup server, a PowerShell process downloaded `Setup-BackupServer.ps1` from `10.10.14.174:80` and saved it as `C:\Windows\Temp\Setup-BackupServer.ps1`. Later process telemetry showed the same script downloaded and invoked.
@@ -54,6 +94,22 @@ C:\Users\bkup-svc\AppData\Local\Temp\sysbackup_20251114.dat
 ```
 
 The script shows the *intended* collection/staging behavior; successful exfiltration outside the host was not established by this evidence.
+
+
+
+![Figure 8. Splunk records download and execution-related activity for Setup-BackupServer.ps1 on the backup server.](screenshots/08-collection-script-telemetry.png)
+
+*Figure 8. Splunk records download and execution-related activity for Setup-BackupServer.ps1 on the backup server.*
+
+
+![Figure 9. Static script inspection exposes the targeted extensions and collection locations.](screenshots/09-script-collection-targets.png)
+
+*Figure 9. Static script inspection exposes the targeted extensions and collection locations.*
+
+
+![Figure 10. The script compresses collected data and renames the ZIP to a dated .dat file; this shows staging logic, not confirmed exfiltration.](screenshots/10-script-archive-staging.png)
+
+*Figure 10. The script compresses collected data and renames the ZIP to a dated .dat file; this shows staging logic, not confirmed exfiltration.*
 
 ## Evidence-based timeline
 
@@ -108,3 +164,4 @@ The script shows the *intended* collection/staging behavior; successful exfiltra
 The decisive pivots were **Zone.Identifier → 7-Zip-created shortcut → mshta parent/child activity → Event ID 3 destination aggregation**, then **PsExec process creation → 4624 logon-type correlation → KAPE script inspection**. An early assumption that the first Type 3 logon answered the RDP question was corrected by verifying Type 10.
 
 **Evidence note:** This write-up is reconstructed from the lab investigation and supplied screenshots. Raw KAPE contents, passwords, payloads and challenge-answer-only material are intentionally not republished.
+

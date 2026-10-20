@@ -13,6 +13,15 @@ This exercise involved reviewing network-monitoring alerts and separating alert 
 
 These are **alert labels**, not automatically confirmed threat classifications. The case is included as a compact triage exercise rather than an end-to-end intrusion report.
 
+## Retained scenario context
+
+
+![Figure 1. Original Warzone 2 room context. This image identifies the exercise; it is not an IDS event or evidence of malicious traffic.](screenshots/01-room-context.png)
+
+*Figure 1. Original Warzone 2 room context. This image identifies the exercise; it is not an IDS event or evidence of malicious traffic.*
+
+The shared investigation discussion retained this context image but no packet-level evidence screenshots for this case. The scope and limitations below therefore remain unchanged.
+
 ## Triage workflow
 1. Inventory alerts by signature, severity, source/destination and timestamp.
 2. Group alerts into conversations and investigate temporal clusters.
@@ -29,3 +38,4 @@ These are **alert labels**, not automatically confirmed threat classifications. 
 To elevate this exercise to a flagship report, add the original alert screenshots, relevant PCAP pivots, and confirmed endpoint/destination details.
 
 **Scope note:** No unverified IP addresses, payload claims or attack timeline have been invented for this report.
+
